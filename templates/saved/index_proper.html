@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriLens - Nutritional Analysis</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #28a745;
+            --secondary-color: #20c997;
+            --text-color: #333;
+            --light-background: #f4f6f9;
+            --white: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--light-background);
+        }
+
+        /* Header Styles */
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            color: var(--white) !important;
+            font-size: 1.5rem;
+        }
+
+        .nav-link {
+            color: var(--white) !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: rgba(255,255,255,0.8) !important;
+            transform: scale(1.05);
+        }
+
+        .hero-section {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 100px 0;
+        }
+
+        /* Floating Food Image Animations */
+        .hero-images {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        .floating-image {
+            position: absolute;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transition: all 1.5s ease;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        /* Multiple Image Floating Animations */
+        .image-1 {
+            width: 250px;
+            transform: rotate(-5deg);
+            animation-delay: -1s;
+            z-index: 2;
+        }
+
+        .image-2 {
+            width: 200px;
+            transform: rotate(5deg);
+            animation-delay: -2s;
+            left: 20%;
+            z-index: 1;
+        }
+
+        .image-3 {
+            width: 180px;
+            transform: rotate(-3deg);
+            animation-delay: -3s;
+            right: 20%;
+            z-index: 1;
+        }
+
+        /* Floating Animation Keyframes */
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(3deg);
+            }
+        }
+
+        /* Background Animation */
+        .hero-bg-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            animation: move-circle 20s linear infinite;
+        }
+
+        @keyframes move-circle {
+            0% {
+                transform: scale(0.5) translate(-100%, -100%);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.2;
+            }
+            100% {
+                transform: scale(1.5) translate(100%, 100%);
+                opacity: 0;
+            }
+        }
+
+        /* Text Animation */
+        .hero-content {
+            position: relative;
+            z-index: 3;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 1s forwards;
+        }
+
+        .hero-subtitle {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 1s 0.5s forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* Feature Section */
+        .feature-section {
+            padding: 80px 0;
+            background-color: var(--white);
+        }
+
+        .feature-card {
+            background-color: var(--light-background);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .feature-card i {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        /* How It Works Section */
+        .how-it-works {
+            background-color: var(--light-background);
+            padding: 80px 0;
+        }
+
+        .step-box {
+            background-color: var(--white);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Testimonial Section */
+        .testimonial-section {
+            background-color: var(--white);
+            padding: 80px 0;
+        }
+
+        .testimonial-card {
+            background-color: var(--light-background);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        /* Call to Action */
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--white);
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        /* Form Section */
+        .form-section {
+            background-color: var(--white);
+            padding: 50px 0;
+        }
+
+        .form-control, .btn {
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: darken(var(--primary-color), 10%);
+            transform: translateY(-3px);
+        }
+
+        /* Image Preview */
+        .image-preview {
+            max-width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        /* Nutritional Table */
+        .nutrition-table {
+            background-color: var(--light-background);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .nutrition-table th {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #333;
+            color: var(--white);
+            padding: 20px 0;
+            text-align: center;
+        }
+        /* Card Hover Effects */
+.feature-card, .step-box {
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.feature-card:hover, .step-box:hover {
+    transform: translateY(-10px); /* Lifts card slightly */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2); /* Deeper shadow on hover */
+}
+
+/* Button Improvements */
+.btn-primary {
+    background-color: #28a745;
+    border-color: #28a745;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #218838; /* Darker green on hover */
+    transform: translateY(-3px); /* Slight lift effect */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Image Styling */
+.image-preview {
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease;
+}
+
+.image-preview:hover {
+    transform: scale(1.02); /* Slight zoom on hover */
+}
+
+/* Section Backgrounds */
+.feature-section, .how-it-works {
+    background-color: #f8f9fa; /* Lighter background */
+    padding: 80px 0;
+}
+
+/* Nutrition Table Improvements */
+.nutrition-table {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.nutrition-table th {
+    background-color: #28a745;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Add Subtle Gradient to Sections */
+.hero-section {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    position: relative;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.1); /* Subtle overlay */
+}
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-utensils me-2"></i>NutriLens
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#how-it-works">How It Works</a>
+                    </li>
+    
+                    <!-- Check if user is logged in -->
+                    {% if session['username'] %}
+                    <li class="nav-item">
+                        <span class="nav-link text-light">Welcome, {{ session['username'] }}</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline-light" href="/logout">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-outline-light" href="/login">Sign-In/Sign-Up</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <h1 class="display-4">Discover Your Food's Nutrition Instantly</h1>
+        <p class="lead">
+            Upload a photo and get comprehensive nutritional insights 
+            about your meal in seconds!
+        </p>
+
+        <!-- Carousel Section -->
+        <div id="nutritionCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <!-- Slide 1 -->
+                <div class="carousel-item active">
+                    <img src="https://watermark.lovepik.com/photo/40073/2353.jpg_wh1200.jpg" 
+                         class="d-block w-100" 
+                         alt="Food 1" 
+                         style="border-radius: 7px;">
+                </div>
+                <!-- Slide 2 -->
+                <div class="carousel-item">
+                    <img src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg" 
+                         class="d-block w-100" 
+                         alt="Food 2" 
+                         style="border-radius: 7px;">
+                </div>
+                <!-- Slide 3 -->
+                <div class="carousel-item">
+                    <img src="https://images.pexels.com/photos/374052/pexels-photo-374052.jpeg" 
+                         class="d-block w-100" 
+                         alt="Food 3" 
+                         style="border-radius: 7px;">
+                </div>
+            </div>
+
+            <!-- Carousel Controls -->
+            <button class="carousel-control-prev" type="button" data-bs-target="#nutritionCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#nutritionCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+    </div>
+</section>
+
+
+    <!-- Features Section -->
+    <section id="features" class="feature-section">
+        <div class="container">
+            <h2 class="text-center mb-5">Why Choose NutriLens?</h2>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="feature-card h-100">
+                        <i class="fas fa-images fa-3x mb-3"></i>
+                        <h4>Image Recognition</h4>
+                        <p>Advanced AI recognizes food items with incredible accuracy.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="feature-card h-100">
+                        <i class="fas fa-chart-pie fa-3x mb-3"></i>
+                        <h4>Detailed Nutrition</h4>
+                        <p>Get comprehensive breakdown of nutrients, calories, and more.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="feature-card h-100">
+                        <i class="fas fa-mobile-alt fa-3x mb-3"></i>
+                        <h4>Easy to Use</h4>
+                        <p>Simple, intuitive interface for quick nutritional insights.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <h2 class="text-center mb-5">How NutriLens Works</h2>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="step-box h-100">
+                        <h3 class="text-success">Capture</h3>
+                        <p>Take a clear photo of your meal using your device's camera.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="step-box h-100">
+                        <h3 class="text-success">Upload</h3>
+                        <p>Upload the image to our advanced AI nutrition analyzer.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="step-box h-100">
+                        <h3 class="text-success">Analyze</h3>
+                        <p>Receive instant nutritional information about your food.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Upload Form -->
+    <div class="container mt-5">
+        <h1 class="text-center">Upload Your Dish</h1>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <input class="form-control" type="file" name="image" required>
+            </div>
+            <button class="btn btn-primary w-100" type="submit">Analyze Dish</button>
+        </form>
+
+        {% if image_url %}
+        <div class="mt-5 text-center">
+            <img src="{{ image_url }}" alt="Uploaded Image" class="img-fluid">
+            <h3>{{ class_name }}</h3>
+            <p>Confidence Score: <strong>{{ confidence_score | round(2) }}</strong></p>
+
+            {% if nutritional_info %}
+            <div class="table-responsive mt-4">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nutrient</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for nutrient, value in nutritional_info.items() %}
+                        <tr>
+                            <td>{{ nutrient }}</td>
+                            <td>{{ value }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-danger">Nutritional data not available for this item.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div id="history" class="container mt-5">
+        <h2 class="text-center">Know ur History</h2>
+        <form method="GET" action="/history" class="mb-3">
+            <label for="date" class="form-label">Select Date:</label>
+            <input type="date" id="date" name="date" class="form-control" value="{{ date }}" required>
+            <button class="btn btn-primary mt-3" type="submit">View Logs</button>
+        </form>
+    
+        {% if logs %}
+        <h3 class="mt-4">Food Logs for {{ date }}</h3>
+        <ul class="list-group mt-3">
+            {% for log in logs %}
+            <li class="list-group-item">
+                <div>
+                    <strong>Food Item:</strong> {{ log.food_item }} <br>
+                    <strong>Confidence:</strong> {{ log.confidence_score | round(2) }} <br>
+                    {% if log.nutritional_info %}
+                    <strong>Calories:</strong> {{ log.nutritional_info.Calories }} <br>
+                    <strong>Protein:</strong> {{ log.nutritional_info.Protein }} g <br>
+                    <strong>Carbohydrates:</strong> {{ log.nutritional_info.Carbohydrates }} g <br>
+                    <strong>Fat:</strong> {{ log.nutritional_info.Fat }} g
+                    {% else %}
+                    <span class="text-danger">No nutritional information available.</span>
+                    {% endif %}
+                </div>
+                <img src="{{ log.image_path }}" alt="Uploaded Image" class="img-thumbnail mt-2" style="width: 150px;">
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mt-4">No logs found for the selected date.</p>
+        {% endif %}
+    </div>
+    
+
+    <!-- Bootstrap JS and Popper (optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+</body>
+</html>

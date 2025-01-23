@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriLens</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">NutriLens</h1>
+        <hr>
+        
+        {% if 'username' not in session %}
+            <div class="alert alert-warning" role="alert">
+                Please <a href="{{ url_for('login') }}">login</a> to use the application.
+            </div>
+        {% else %}
+            <div class="text-center mb-4">
+                <h3>Welcome, {{ session['username'] }}!</h3>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+            </div>
+        {% endif %}
+        
+        <h4>Upload your food image for analysis:</h4>
+        
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="image">Choose Image</label>
+                <input type="file" class="form-control-file" id="image" name="image" required>
+            </div>
+            <div class="form-group">
+                <label for="bowl_size">Choose Bowl Size</label>
+                <select class="form-control" id="bowl_size" name="bowl_size">
+                    {% for key, bowl in bowl_sizes.items() %}
+                        <option value="{{ key }}" {% if key == selected_bowl %} selected {% endif %}>
+                            {{ bowl.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Analyze</button>
+        </form>
+        
+        {% if image_url %}
+            <hr>
+            <h3>Food Item: {{ class_name }}</h3>
+            <h5>Confidence: {{ confidence_score * 100 | round(2) }}%</h5>
+            
+            {% if nutritional_info %}
+                <h4>Nutritional Information:</h4>
+                <ul>
+                    <li><strong>Calories:</strong> {{ nutritional_info['Energy (Kcal)'] }} Kcal</li>
+                    <li><strong>Protein:</strong> {{ nutritional_info['Protein (g)'] }} g</li>
+                    <li><strong>Carbohydrates:</strong> {{ nutritional_info['Carbohydrates (g)'] }} g</li>
+                    <li><strong>Fat:</strong> {{ nutritional_info['Fat (g)'] }} g</li>
+                </ul>
+            {% else %}
+                <p>No nutritional information available for this food item.</p>
+            {% endif %}
+            
+            <h4>Bowl Size: {{ bowl_sizes[selected_bowl]['name'] }}</h4>
+            <h5>Portion Weight: {{ 100 * bowl_sizes[selected_bowl]['multiplier'] }}g</h5>
+            
+            <div class="text-center">
+                <img src="{{ url_for('static', filename='uploads/' + image_url.split('/')[-1]) }}" alt="Food Image" class="img-fluid">
+            </div>
+        {% endif %}
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</body>
+</html>
+
+
+

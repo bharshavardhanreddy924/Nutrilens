@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Analysis - NutriLens</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <style>
+        :root {
+            --primary-color: #2ecc71; /* Light green */
+            --secondary-color: #27ae60; /* Darker green */
+            --accent-color: #FFE66D; /* Yellow for accents */
+            --dark-color: #2C3E50; /* Dark blue for text */
+            --light-color: #F7F9FC; /* Light background */
+            --success-color: #2ecc71; /* Green for success */
+            --white: #ffffff; /* White */
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            --gradient: linear-gradient(135deg, var(--primary-color), #34D399); /* Green gradient */
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: var(--dark-color) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+            font-size: 1.5rem;
+        }
+
+        .nav-link {
+            color: var(--white) !important;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            margin: 0 10px;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
+
+        .nav-link.active {
+            color: var(--secondary-color) !important;
+        }
+
+        .analysis-header {
+            background: var(--gradient);
+            color: var(--white);
+            text-align: center;
+            padding: 80px 0;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .analysis-header h1 {
+            font-weight: 700;
+            font-size: 3rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .analysis-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            background: var(--white);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-title {
+            color: var(--dark-color);
+            font-weight: 600;
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 1rem;
+        }
+
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .progress-bar {
+            background-color: var(--primary-color);
+            border-radius: 5px;
+        }
+
+        .insights-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .insights-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .insights-list li:last-child {
+            border-bottom: none;
+        }
+
+        .insights-list ul {
+            margin-top: 8px;
+            padding-left: 20px;
+        }
+
+        .insights-list strong {
+            color: var(--dark-color);
+            font-weight: 600;
+        }
+
+        .goal-progress .mb-3 {
+            margin-bottom: 1.5rem !important;
+        }
+
+        .goal-progress span {
+            font-size: 0.9rem;
+            color: var(--dark-color);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">NutriLens</a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="/history">History</a>
+                <a class="nav-link" href="/weekly_analysis">Weekly Analysis</a>
+                <a class="nav-link active" href="/chatbot">Diet Chat</a>
+                <a class="nav-link" href="/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="analysis-header">
+        <div class="container">
+            <h1 class="animate__animated animate__fadeInDown">Weekly Analysis</h1>
+            <p class="animate__animated animate__fadeInUp">Review your progress and insights from the past week</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Macronutrient Distribution</h5>
+                        <div class="chart-container">
+                            <canvas id="macronutrientPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Nutrient Trends</h5>
+                        <div class="chart-container">
+                            <canvas id="nutrientTrendsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Goal Completion</h5>
+                        <div class="goal-progress">
+                            {% for nutrient, percentage in completion_percentages.items() %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>{{ nutrient | title }}</span>
+                                    <span>{{ percentage | round(1) }}%</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ percentage }}%"
+                                         aria-valuenow="{{ percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Weekly Insights</h5>
+                        <ul class="insights-list">
+                            <li><strong>Average Daily Calories:</strong> {{ avg_daily_calories }} Kcal</li>
+                            <li><strong>Total Meals Logged:</strong> {{ meal_counts }}</li>
+                            <li>
+                                <strong>Most Frequent Foods:</strong>
+                                <ul>
+                                    {% for food, count in favorite_foods %}
+                                    <li>{{ food }}: {{ count }} times</li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Initialize charts when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Macronutrient Pie Chart
+            new Chart(document.getElementById('macronutrientPieChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Protein', 'Carbohydrates', 'Fat'],
+                    datasets: [{
+                        data: [
+                            {{ weekly_totals.protein }},
+                            {{ weekly_totals.carbohydrates }},
+                            {{ weekly_totals.fat }}
+                        ],
+                        backgroundColor: [
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(37, 99, 235, 0.8)',
+                            'rgba(255, 230, 109, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Nutrient Trends Line Chart
+            const nutrientTrends = JSON.parse('{{ nutrient_trends | safe }}');
+            new Chart(document.getElementById('nutrientTrendsChart'), {
+                type: 'line',
+                data: {
+                    labels: nutrientTrends.dates,
+                    datasets: [
+                        {
+                            label: 'Calories',
+                            data: nutrientTrends.calories,
+                            borderColor: 'rgba(37, 99, 235, 1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Protein',
+                            data: nutrientTrends.protein,
+                            borderColor: 'rgba(46, 204, 113, 1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Carbohydrates',
+                            data: nutrientTrends.carbohydrates,
+                            borderColor: 'rgba(255, 230, 109, 1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Fat',
+                            data: nutrientTrends.fat,
+                            borderColor: 'rgba(124, 58, 237, 1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

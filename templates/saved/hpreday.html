@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - NutriLens</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #28a745;
+            --secondary-color: #20c997;
+            --text-color: #333;
+            --light-background: #f4f6f9;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--light-background);
+            color: var(--text-color);
+        }
+
+        .history-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--white);
+            text-align: center;
+            padding: 50px 0;
+        }
+
+        .history-header h1 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+        }
+
+        .history-card {
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .history-card img {
+            max-height: 200px;
+            object-fit: cover;
+        }
+
+        .history-card-body {
+            padding: 15px;
+        }
+
+        .history-card-body h5 {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: darken(var(--primary-color), 10%);
+        }
+
+        .total-nutrition {
+            background: var(--white);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .total-nutrition h2 {
+            color: var(--primary-color);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .total-nutrition p {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <div class="history-header">
+        <h1>History Logs</h1>
+        <p>Explore your previously analyzed dishes and nutritional insights.</p>
+    </div>
+
+    <!-- History Form -->
+    <div class="container my-5">
+        <form method="GET" action="/history" class="mb-4">
+            <label for="date" class="form-label">Select Date:</label>
+            <input type="date" id="date" name="date" class="form-control mb-3" required>
+            <button class="btn btn-primary w-100" type="submit">View Logs</button>
+        </form>
+
+        {% if logs %}
+        <!-- Total Nutritional Info -->
+        <div class="total-nutrition">
+            <h2>Total Nutritional Information</h2>
+            <p><strong>Total Calories:</strong> {{ total_nutrition['calories'] }} kcal</p>
+            <p><strong>Total Protein:</strong> {{ total_nutrition['protein'] }} g</p>
+            <p><strong>Total Carbohydrates:</strong> {{ total_nutrition['carbohydrates'] }} g</p>
+            <p><strong>Total Fat:</strong> {{ total_nutrition['fat'] }} g</p>
+        </div>
+
+        <!-- Individual Logs -->
+        <div class="row">
+            {% for log in logs %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card history-card">
+                    <img src="{{ log.image_path }}" class="card-img-top" alt="Dish Image">
+                    <div class="card-body history-card-body">
+                        <h5 class="card-title">{{ log.food_item }}</h5>
+                        <p class="card-text">
+                            <strong>Confidence:</strong> {{ log.confidence_score | round(2) }}<br>
+                            {% if log.nutritional_info %}
+                            <strong>Calories:</strong> {{ log['nutritional_info']['Energy (Kcal)'] }} cal<br>
+                            <strong>Protein:</strong> {{ log['nutritional_info']['Protein (g)'] }} g<br>
+                            <strong>Carbohydrates:</strong> {{ log['nutritional_info']['Carbohydrates (g)'] }} g<br>
+                            <strong>Fat:</strong> {{ log['nutritional_info']['Fat (g)'] }} g
+                            {% else %}
+                            <span class="text-danger">No nutritional information available.</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">No logs found for the selected date.</p>
+        {% endif %}
+    </div>
+    <!-- Recommendations -->
+    {% if recommendations %}
+    <div class="card mt-4">
+        <div class="card-body">
+            <h2 class="h4 mb-4 text-success">Nutritional Recommendations</h2>
+            {% for nutrient, advice in recommendations.items() %}
+            <div class="nutrient-info mb-4">
+                <h3 class="h5 mb-3">{{ nutrient }}</h3>
+                <p class="mb-2">
+                    Current: {{ "%.1f"|format(advice.current) }}{{ 'kcal' if 'Energy' in nutrient else 'g' }} / 
+                    Recommended: {{ advice.recommended }}{{ 'kcal' if 'Energy' in nutrient else 'g' }} 
+                    ({{ "%.1f"|format(advice.percentage) }}%)
+                </p>
+                {% if advice.foods %}
+                <div>
+                    <p class="fw-bold mb-2">Recommended foods to increase {{ nutrient.split(' ')[0] }}:</p>
+                    <ul class="mb-0">
+                        {% for food in advice.foods %}
+                        <li>{{ food }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+    <!-- Bootstrap JS and Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
