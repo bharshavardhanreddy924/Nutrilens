@@ -21,8 +21,10 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # MongoDB Configuration
-mongo_client = MongoClient("mongodb://localhost:27017/")
-db = mongo_client["NutriLens"]
+from pymongo.mongo_client import MongoClient
+uri = "mongodb+srv://bharshavardhanreddy924:uLCmWytTkthYz3xJ@data-dine.5oghq.mongodb.net/?retryWrites=true&w=majority&ssl=true"
+client = MongoClient(uri, tlsCAFile=certifi.where())
+db = client["NutriLens"]
 food_logs_collection = db["food_logs"]
 users_collection = db["users"]
 
