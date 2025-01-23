@@ -36,7 +36,8 @@ food_logs_collection = db["food_logs"]
 users_collection = db["users"]
 
 
-# Bowl sizes configuration
+
+
 BOWL_SIZES = {
     "mini": {"name": "Mini Bowl", "multiplier": 1.0},  # 100g
     "small": {"name": "Small Bowl", "multiplier": 2.0},  # 200g
@@ -444,7 +445,7 @@ def chat():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-        
+    
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
