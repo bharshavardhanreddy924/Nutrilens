@@ -1,4 +1,7 @@
+
 import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
 from flask import Flask, render_template, request, flash, redirect, url_for, session, jsonify
 from flask_bcrypt import Bcrypt
 from keras.models import load_model
@@ -20,7 +23,6 @@ UPLOAD_FOLDER = 'static/uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# MongoDB Configuration
 from pymongo.mongo_client import MongoClient
 uri = "mongodb+srv://bharshavardhanreddy924:uLCmWytTkthYz3xJ@data-dine.5oghq.mongodb.net/?retryWrites=true&w=majority&ssl=true"
 client = MongoClient(uri, tlsCAFile=certifi.where())
