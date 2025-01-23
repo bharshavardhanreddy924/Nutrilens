@@ -23,9 +23,14 @@ UPLOAD_FOLDER = 'static/uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
+import certifi
+# MongoDB Configuration
 from pymongo.mongo_client import MongoClient
 uri = "mongodb+srv://bharshavardhanreddy924:uLCmWytTkthYz3xJ@data-dine.5oghq.mongodb.net/?retryWrites=true&w=majority&ssl=true"
 client = MongoClient(uri, tlsCAFile=certifi.where())
+
 db = client["NutriLens"]
 food_logs_collection = db["food_logs"]
 users_collection = db["users"]
