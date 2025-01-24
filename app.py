@@ -145,7 +145,13 @@ def index():
 
         file = request.files['image']
         bowl_size = request.form.get('bowl_size', 'mini')  # Default to mini bowl if not specified
-
+        file = request.files['file']
+        if file:
+        # Save the file to the upload folder
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+            file.save(file_path)
+            return "File uploaded successfully"
+            
         if file.filename == '':
             flash('No selected file', 'danger')
             return redirect(request.url)
