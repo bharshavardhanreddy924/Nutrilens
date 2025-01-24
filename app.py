@@ -133,34 +133,36 @@ def adjust_nutritional_info(nutritional_info, multiplier):
             adjusted_info[key] = value
     return adjusted_info
 
-@app.route('/', methods=['GET', 'POST'])
 def index():
     if 'username' not in session:
         return redirect(url_for('login'))
 
     if request.method == 'POST':
+        # Check if an image file is uploaded
         if 'image' not in request.files:
-            flash('No file part', 'danger')
+            flash('No file part in request', 'danger')
             return redirect(request.url)
 
         file = request.files['image']
-        bowl_size = request.form.get('bowl_size', 'mini')  # Default to mini bowl if not specified
-        if file:
-        # Save the file to the upload folder
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-            file.save(file_path)
-            return "File uploaded successfully"
-            
-        if file.filename == '':
-            flash('No selected file', 'danger')
+        bowl_size = request.form.get('bowl_size', 'mini')  # Default to 'mini' bowl size
+
+        # Validate bowl size
+        if bowl_size not in BOWL_SIZES:
+            flash('Invalid bowl size selected', 'danger')
             return redirect(request.url)
 
-        if file and model is not None:
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-            file.save(file_path)
+        if file.filename == '':
+            flash('No file selected', 'danger')
+            return redirect(request.url)
 
+        if file:
             try:
-                image = Image.open(file).convert("RGB")
+                # Save the file
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+                file.save(file_path)
+
+                # Process the image and predict
+                image = Image.open(file_path).convert("RGB")
                 image = ImageOps.fit(image, (224, 224), Image.Resampling.LANCZOS)
                 image_array = np.asarray(image)
                 normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
@@ -172,13 +174,14 @@ def index():
                 class_name = class_names[index]
                 confidence_score = float(prediction[0][index])
 
+                # Fetch nutritional info and adjust based on bowl size
                 nutritional_info = None
                 if class_name in nutritional_data.index:
                     nutritional_info = nutritional_data.loc[class_name].to_dict()
-                    # Adjust nutritional info based on bowl size
                     multiplier = BOWL_SIZES[bowl_size]["multiplier"]
                     nutritional_info = adjust_nutritional_info(nutritional_info, multiplier)
 
+                # Log the food item to the database
                 food_log = {
                     "username": session.get("username", "guest"),
                     "date": datetime.now().strftime("%Y-%m-%d"),
@@ -191,6 +194,7 @@ def index():
                 }
                 food_logs_collection.insert_one(food_log)
 
+                flash('File uploaded and processed successfully!', 'success')
                 return render_template(
                     'index.html',
                     image_url=file_path,
