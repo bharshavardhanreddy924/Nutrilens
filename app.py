@@ -57,7 +57,7 @@ DAILY_RECOMMENDATIONS = {
 
 # Load the pre-trained model and class labels
 try:
-    model = load_model("keras_100_Model.h5", compile=False)
+    model = load_model("working_model.h5", compile=False)
     with open("labels.txt", "r") as f:
         class_names = [' '.join(name.strip().split()[1:]) for name in f.readlines()]
 except Exception as e:
