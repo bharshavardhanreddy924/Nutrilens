@@ -19,9 +19,8 @@ bcrypt = Bcrypt(app)
 app.secret_key = os.urandom(24)
 
 # Configure the upload folder
-UPLOAD_FOLDER = 'static/uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
