@@ -19,8 +19,9 @@ bcrypt = Bcrypt(app)
 app.secret_key = os.urandom(24)
 
 # Configure the upload folder
-app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
-
+UPLOAD_FOLDER = 'static/uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
@@ -56,7 +57,7 @@ DAILY_RECOMMENDATIONS = {
 
 # Load the pre-trained model and class labels
 try:
-    model = load_model("working_model.h5", compile=False)
+    model = load_model("keras_100_Model.h5", compile=False)
     with open("labels.txt", "r") as f:
         class_names = [' '.join(name.strip().split()[1:]) for name in f.readlines()]
 except Exception as e:
@@ -133,6 +134,7 @@ def adjust_nutritional_info(nutritional_info, multiplier):
             adjusted_info[key] = value
     return adjusted_info
 
+@app.route('/', methods=['GET', 'POST'])
 def index():
     if 'username' not in session:
         return redirect(url_for('login'))
