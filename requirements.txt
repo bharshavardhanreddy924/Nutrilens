@@ -72,7 +72,6 @@ Pygments==2.19.1
 pymongo==4.10.1
 python-dateutil==2.9.0.post0
 pytz==2024.2
-pywin32==308
 PyYAML==6.0.2
 pyzmq==26.2.0
 requests==2.32.3
