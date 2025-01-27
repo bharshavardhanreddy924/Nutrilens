@@ -7,7 +7,7 @@ pandas==1.5.3
 certifi
 pymongo[srv]==4.6.1
 tensorflow==2.10.0
-keras==2.10  .0
+keras==2.10.0
 langchain-groq==0.0.1
 intel-tensorflow
 scikit-learn
