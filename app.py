@@ -19,7 +19,7 @@ bcrypt = Bcrypt(app)
 app.secret_key = os.urandom(24)
 
 # Configure the upload folder
-UPLOAD_FOLDER = 'static/uploads'
+UPLOAD_FOLDER = 'uploads'
 if os.path.exists(UPLOAD_FOLDER):
     if not os.path.isdir(UPLOAD_FOLDER):
         print(f"Error: '{UPLOAD_FOLDER}' exists but is not a directory.")
