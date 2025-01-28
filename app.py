@@ -20,12 +20,16 @@ app.secret_key = os.urandom(24)
 
 # Configure the upload folder
 UPLOAD_FOLDER = 'static/uploads'
-# Check if 'static/uploads' exists and is a directory, otherwise create it
-if not os.path.isdir(UPLOAD_FOLDER):
+if os.path.exists(UPLOAD_FOLDER):
+    if not os.path.isdir(UPLOAD_FOLDER):
+        print(f"Error: '{UPLOAD_FOLDER}' exists but is not a directory.")
+else:
     try:
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        print(f"Upload folder created at: {UPLOAD_FOLDER}")
     except Exception as e:
         print(f"Error creating upload folder: {e}")
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 app = Flask(__name__)
