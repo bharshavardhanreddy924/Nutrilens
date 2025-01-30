@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ friend_username }}'s Progress - NutriLens</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #16a34a;
+            --warning-color: #ca8a04;
+            --background-color: #f8fafc;
+            --card-background: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .progress-header {
+            background: var(--card-background);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .comparison-section {
+            background: var(--card-background);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .section-title {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .comparison-card {
+            background: var(--background-color);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            transition: transform 0.2s ease;
+        }
+
+        .comparison-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .winner {
+            border: 2px solid var(--success-color);
+            position: relative;
+        }
+
+        .winner::after {
+            content: '🏆';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: var(--success-color);
+            color: white;
+            padding: 0.25rem;
+            border-radius: 50%;
+            font-size: 1rem;
+        }
+
+        .achievement-bar {
+            height: 0.75rem;
+            background: var(--border-color);
+            border-radius: 1rem;
+            overflow: hidden;
+            margin: 0.75rem 0;
+        }
+
+        .achievement-progress {
+            height: 100%;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .streak-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: var(--success-color);
+            color: white;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            background: var(--card-background);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            height: 400px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .meals-comparison {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .recent-meals {
+            background: var(--card-background);
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+
+        .meal-card {
+            background: var(--background-color);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: transform 0.2s ease;
+        }
+
+        .meal-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .meal-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .meal-info {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .nutrient-tag {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid,
+            .meals-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="progress-header">
+            <h1>Nutrition Progress Comparison</h1>
+            <a href="{{ url_for('chat_interface', username=friend_username) }}" class="btn btn-primary">
+                <i class="fas fa-comment"></i>&nbsp; Chat
+            </a>
+        </div>
+
+        <div class="comparison-section">
+            <h2 class="section-title">Goal Achievement Comparison</h2>
+            <div class="comparison-grid">
+                <div class="comparison-card {% if user_stats.average_achievement > friend_stats.average_achievement %}winner{% endif %}">
+                    <h3>Your Progress</h3>
+                    <div class="achievement-bar">
+                        <div class="achievement-progress" style="width: {{ user_stats.average_achievement }}%"></div>
+                    </div>
+                    <p>Average Achievement: {{ user_stats.average_achievement }}%</p>
+                    <p>Current Streak: <span class="streak-badge">{{ user_stats.streak }} days</span></p>
+                    {% if user_stats.best_day %}
+                        <p>Best Day: {{ user_stats.best_day }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="comparison-card {% if friend_stats.average_achievement > user_stats.average_achievement %}winner{% endif %}">
+                    <h3>{{ friend_username }}'s Progress</h3>
+                    <div class="achievement-bar">
+                        <div class="achievement-progress" style="width: {{ friend_stats.average_achievement }}%"></div>
+                    </div>
+                    <p>Average Achievement: {{ friend_stats.average_achievement }}%</p>
+                    <p>Current Streak: <span class="streak-badge">{{ friend_stats.streak }} days</span></p>
+                    {% if friend_stats.best_day %}
+                        <p>Best Day: {{ friend_stats.best_day }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="comparison-section">
+            <h2 class="section-title">Daily Goals</h2>
+            <div class="comparison-grid">
+                <div class="comparison-card">
+                    <h3>Your Goals</h3>
+                    <p>Calories: {{ current_user_goals.get('daily_calories', 2000) }}</p>
+                    <p>Protein: {{ current_user_goals.get('daily_protein', 50) }}g</p>
+                    <p>Carbs: {{ current_user_goals.get('daily_carbs', 250) }}g</p>
+                    <p>Fat: {{ current_user_goals.get('daily_fat', 70) }}g</p>
+                </div>
+                
+                <div class="comparison-card">
+                    <h3>{{ friend_username }}'s Goals</h3>
+                    <p>Calories: {{ friend_goals.get('daily_calories', 2000) }}</p>
+                    <p>Protein: {{ friend_goals.get('daily_protein', 50) }}g</p>
+                    <p>Carbs: {{ friend_goals.get('daily_carbs', 250) }}g</p>
+                    <p>Fat: {{ friend_goals.get('daily_fat', 70) }}g</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="comparisonChart"></canvas>
+        </div>
+
+        <div class="comparison-section">
+            <h2 class="section-title">Recent Meals Comparison</h2>
+            <div class="meals-comparison">
+                <div class="recent-meals">
+                    <h3>Your Recent Meals</h3>
+                    {% if user_logs %}
+                        {% for log in user_logs[:5] %}
+                            <div class="meal-card">
+                                <div class="meal-title">{{ log.food_item }}</div>
+                                <div class="meal-info">{{ log.date }} - {{ log.bowl_size }}</div>
+                                {% if log.nutritional_info %}
+                                    <div>
+                                        <span class="nutrient-tag">{{ log.nutritional_info["Energy (Kcal)"]|round|int }} cal</span>
+                                        <span class="nutrient-tag">{{ log.nutritional_info["Protein (g)"]|round|int }}g protein</span>
+                                        <span class="nutrient-tag">{{ log.nutritional_info["Carbohydrates (g)"]|round|int }}g carbs</span>
+                                        <span class="nutrient-tag">{{ log.nutritional_info["Fat (g)"]|round|int }}g fat</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No recent meals logged</p>
+                    {% endif %}
+                </div>
+
+                <div class="recent-meals">
+                    <h3>{{ friend_username }}'s Recent Meals</h3>
+                    {% if logs %}
+                        {% for log in logs[:5] %}
+                            <div class="meal-card">
+                                <div class="meal-title">{{ log.food_item }}</div>
+                                <div class="meal-info">{{ log.date }} - {{ log.bowl_size }}</div>
+                                {% if log.nutritional_info %}
+                                    <div>
+                                        <span class="nutrient-tag">{{ log.nutritional_info["Energy (Kcal)"]|round|int }} cal</span>
+                                        <span class="nutrient-tag">{{ log.nutritional_info["Protein (g)"]|round|int }}g protein</span>
+                                        <span class="nutrient-tag">{{ log.nutritional_info["Carbohydrates (g)"]|round|int }}g carbs</span>
+                                        <span class="nutrient-tag">{{ log.nutritional_info["Fat (g)"]|round|int }}g fat</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No recent meals logged</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if daily_nutrients %}
+    <script>
+        const dates = Object.keys({{ daily_nutrients|tojson }});
+        const friendNutrients = {{ daily_nutrients|tojson }};
+        const userNutrients = {{ user_nutrients|tojson }};
+        
+        const ctx = document.getElementById('comparisonChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Your Goal Achievement',
+                        data: dates.map(date => userNutrients[date].goal_achievement || 0),
+                        borderColor: 'rgb(37, 99, 235)',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: '{{ friend_username }}\'s Goal Achievement',
+                        data: dates.map(date => friendNutrients[date].goal_achievement || 0),
+                        borderColor: 'rgb(22, 163, 74)',
+                        backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Goal Achievement (%)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Daily Goal Achievement Comparison',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+    </script>
+    {% endif %}
+</body>
+</html>
