@@ -44,7 +44,329 @@ db = client["NutriLens"]
 food_logs_collection = db["food_logs"]
 users_collection = db["users"]
 
+from flask_socketio import SocketIO, emit, join_room, leave_room
+from bson.objectid import ObjectId
+from datetime import datetime, timedelta
+import json
 
+# Initialize SocketIO with Flask app
+socketio = SocketIO(app)
+
+# Add these collections to MongoDB setup
+friends_collection = db["friends"]
+chat_collection = db["chats"]
+friend_requests_collection = db["friend_requests"]
+
+# Friend Request System
+@app.route('/send_friend_request/<username>', methods=['POST'])
+def send_friend_request(username):
+    if 'username' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    if username == session['username']:
+        return jsonify({"error": "Cannot send friend request to yourself"}), 400
+        
+    # Check if user exists
+    target_user = users_collection.find_one({"username": username})
+    if not target_user:
+        return jsonify({"error": "User not found"}), 404
+        
+    # Check if already friends
+    existing_friendship = friends_collection.find_one({
+        "$or": [
+            {"user1": session['username'], "user2": username},
+            {"user1": username, "user2": session['username']}
+        ]
+    })
+    
+    if existing_friendship:
+        return jsonify({"error": "Already friends"}), 400
+        
+    # Check if request already sent
+    existing_request = friend_requests_collection.find_one({
+        "from_user": session['username'],
+        "to_user": username,
+        "status": "pending"
+    })
+    
+    if existing_request:
+        return jsonify({"error": "Friend request already sent"}), 400
+        
+    # Create friend request
+    friend_requests_collection.insert_one({
+        "from_user": session['username'],
+        "to_user": username,
+        "status": "pending",
+        "date": datetime.now()
+    })
+    
+    return jsonify({"success": True, "message": "Friend request sent"})
+
+@app.route('/handle_friend_request/<request_id>/<action>', methods=['POST'])
+def handle_friend_request(request_id, action):
+    if 'username' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    friend_request = friend_requests_collection.find_one({
+        "_id": ObjectId(request_id),
+        "to_user": session['username']
+    })
+    
+    if not friend_request:
+        return jsonify({"error": "Friend request not found"}), 404
+        
+    if action == "accept":
+        # Create friendship
+        friends_collection.insert_one({
+            "user1": friend_request['from_user'],
+            "user2": friend_request['to_user'],
+            "date": datetime.now()
+        })
+        status = "accepted"
+    elif action == "reject":
+        status = "rejected"
+    else:
+        return jsonify({"error": "Invalid action"}), 400
+        
+    # Update request status
+    friend_requests_collection.update_one(
+        {"_id": ObjectId(request_id)},
+        {"$set": {"status": status}}
+    )
+    
+    return jsonify({"success": True, "message": f"Friend request {status}"})
+
+# Search Users
+@app.route('/search_users')
+def search_users():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+        
+    query = request.args.get('query', '')
+    if len(query) < 3:
+        return jsonify([])
+        
+    users = users_collection.find({
+        "username": {"$regex": query, "$options": "i"},
+        "username": {"$ne": session['username']}
+    }, {"username": 1, "_id": 0}).limit(10)
+    
+    return jsonify([user['username'] for user in users])
+
+# Chat System
+@socketio.on('join')
+def on_join(data):
+    room = data['room']
+    join_room(room)
+
+@socketio.on('leave')
+def on_leave(data):
+    room = data['room']
+    leave_room(room)
+
+@socketio.on('send_message')
+def handle_message(data):
+    room = data['room']
+    message = {
+        "sender": session['username'],
+        "content": data['message'],
+        "timestamp": datetime.now(),
+        "room": room
+    }
+    
+    chat_collection.insert_one(message)
+    emit('new_message', {
+        "sender": message['sender'],
+        "content": message['content'],
+        "timestamp": message['timestamp'].strftime("%Y-%m-%d %H:%M:%S")
+    }, room=room)
+
+# Friend Progress Tracking
+@app.route('/friend/progress/<username>')
+def friend_progress(username):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Check if friends
+    friendship = friends_collection.find_one({
+        "$or": [
+            {"user1": session['username'], "user2": username},
+            {"user1": username, "user2": session['username']}
+        ]
+    })
+    
+    if not friendship:
+        flash("You must be friends to view their progress", "error")
+        return redirect(url_for('index'))
+    
+    # Get both users' goals
+    current_user_goals = users_collection.find_one({"username": session['username']})
+    friend_goals = users_collection.find_one({"username": username})
+    
+    # Get logs for last 7 days for both users
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=7)
+    
+    # Initialize daily nutrients dict for both users
+    def init_daily_nutrients():
+        nutrients = {}
+        current_date = start_date
+        while current_date <= end_date:
+            date_str = current_date.strftime("%Y-%m-%d")
+            nutrients[date_str] = {
+                "calories": 0,
+                "protein": 0,
+                "carbohydrates": 0,
+                "fat": 0,
+                "goal_achievement": 0  # Percentage of daily goals met
+            }
+            current_date += timedelta(days=1)
+        return nutrients
+    
+    user_nutrients = init_daily_nutrients()
+    friend_nutrients = init_daily_nutrients()
+    
+    # Get and process logs for both users
+    def process_user_logs(username, nutrients_dict, goals):
+        logs = list(food_logs_collection.find({
+            "username": username,
+            "date": {
+                "$gte": start_date.strftime("%Y-%m-%d"),
+                "$lte": end_date.strftime("%Y-%m-%d")
+            }
+        }).sort("date", -1))
+        
+        # Define daily goals
+        daily_goals = {
+            "calories": goals.get("daily_calories", 2000),
+            "protein": goals.get("daily_protein", 50),
+            "carbohydrates": goals.get("daily_carbs", 250),
+            "fat": goals.get("daily_fat", 70)
+        }
+        
+        for log in logs:
+            date = log['date']
+            if nutritional_info := log.get("nutritional_info"):
+                nutrients_dict[date]["calories"] += nutritional_info.get("Energy (Kcal)", 0)
+                nutrients_dict[date]["protein"] += nutritional_info.get("Protein (g)", 0)
+                nutrients_dict[date]["carbohydrates"] += nutritional_info.get("Carbohydrates (g)", 0)
+                nutrients_dict[date]["fat"] += nutritional_info.get("Fat (g)", 0)
+                
+                # Calculate goal achievement percentage
+                daily_achievements = [
+                    min(nutrients_dict[date]["calories"] / daily_goals["calories"] * 100, 100),
+                    min(nutrients_dict[date]["protein"] / daily_goals["protein"] * 100, 100),
+                    min(nutrients_dict[date]["carbohydrates"] / daily_goals["carbohydrates"] * 100, 100),
+                    min(nutrients_dict[date]["fat"] / daily_goals["fat"] * 100, 100)
+                ]
+                nutrients_dict[date]["goal_achievement"] = sum(daily_achievements) / len(daily_achievements)
+        
+        return logs
+    
+    user_logs = process_user_logs(session['username'], user_nutrients, current_user_goals)
+    friend_logs = process_user_logs(username, friend_nutrients, friend_goals)
+    
+    # Calculate overall achievement scores
+    def calculate_achievement_stats(nutrients_dict):
+        dates = nutrients_dict.keys()
+        total_achievement = sum(nutrients_dict[date]["goal_achievement"] for date in dates)
+        avg_achievement = total_achievement / len(dates) if dates else 0
+        
+        return {
+            "average_achievement": round(avg_achievement, 1),
+            "best_day": max(dates, key=lambda d: nutrients_dict[d]["goal_achievement"]) if dates else None,
+            "streak": calculate_streak(nutrients_dict)
+        }
+    
+    def calculate_streak(nutrients_dict):
+        streak = 0
+        dates = sorted(nutrients_dict.keys(), reverse=True)
+        for date in dates:
+            if nutrients_dict[date]["goal_achievement"] >= 80:  # Consider 80% achievement as a successful day
+                streak += 1
+            else:
+                break
+        return streak
+    
+    user_stats = calculate_achievement_stats(user_nutrients)
+    friend_stats = calculate_achievement_stats(friend_nutrients)
+    
+    return render_template(
+        'friend_progress.html',
+        friend_username=username,
+        daily_nutrients=friend_nutrients,
+        logs=friend_logs,
+        user_nutrients=user_nutrients,
+        user_logs=user_logs,
+        user_stats=user_stats,
+        friend_stats=friend_stats,
+        current_user_goals=current_user_goals,
+        friend_goals=friend_goals
+    )
+# Chat Interface
+@app.route('/chat/<username>')
+def chat_interface(username):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+        
+    # Check if friends
+    friendship = friends_collection.find_one({
+        "$or": [
+            {"user1": session['username'], "user2": username},
+            {"user1": username, "user2": session['username']}
+        ]
+    })
+    
+    if not friendship:
+        flash("You must be friends to chat", "error")
+        return redirect(url_for('index'))
+        
+    # Generate unique room ID
+    users = sorted([session['username'], username])
+    room = f"chat_{users[0]}_{users[1]}"
+    
+    # Get chat history
+    messages = chat_collection.find({
+        "room": room
+    }).sort("timestamp", 1)
+    
+    return render_template(
+        'chat.html',
+        friend_username=username,
+        room=room,
+        messages=messages
+    )
+
+# Friends List
+@app.route('/friends')
+def friends_list():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+        
+    # Get all friends - convert cursor to list
+    friends = friends_collection.find({
+        "$or": [
+            {"user1": session['username']},
+            {"user2": session['username']}
+        ]
+    })
+    
+    friend_usernames = []
+    for friend in friends:
+        friend_username = friend['user1'] if friend['user1'] != session['username'] else friend['user2']
+        friend_usernames.append(friend_username)
+    
+    # Get pending friend requests - convert cursor to list
+    pending_requests = list(friend_requests_collection.find({
+        "to_user": session['username'],
+        "status": "pending"
+    }))
+    
+    return render_template(
+        'friends.html',
+        friends=friend_usernames,
+        pending_requests=pending_requests
+    )
 
 
 BOWL_SIZES = {
