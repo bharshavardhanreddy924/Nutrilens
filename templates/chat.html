@@ -293,92 +293,94 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const room = '{{ room }}';
-        const chatContainer = document.getElementById('chat');
-        
-        // Join the room
+    // Add this in your chat.html template, replacing the existing socket.io script
+<script>
+    // Initialize socket with error handling and reconnection
+    const socket = io({
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        timeout: 20000
+    });
+
+    const room = '{{ room }}';
+    const chatContainer = document.getElementById('chat');
+    let isConnected = false;
+
+    // Connection handling
+    socket.on('connect', () => {
+        console.log('Connected to server');
+        isConnected = true;
+        // Join room on successful connection
         socket.emit('join', { room: room });
-        
-        // Listen for new messages
-        socket.on('new_message', (data) => {
-            appendMessage(data);
-        });
-        
-        function appendMessage(data) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${data.sender === '{{ session.username }}' ? 'sent' : 'received'}`;
-            
-            const time = new Date(data.timestamp);
-            const formattedTime = time.toLocaleString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-                month: 'short',
-                day: 'numeric'
-            });
-            
-            messageDiv.innerHTML = `
-                <div class="message-content">${data.content}</div>
-                <div class="message-time">${formattedTime}</div>
-            `;
-            
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            
-            // Add fade-in animation
-            messageDiv.style.opacity = '0';
-            messageDiv.style.transform = 'translateY(10px)';
-            
-            requestAnimationFrame(() => {
-                messageDiv.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                messageDiv.style.opacity = '1';
-                messageDiv.style.transform = 'translateY(0)';
-            });
-        }
-        
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            
-            if (message) {
-                socket.emit('send_message', {
-                    room: room,
-                    message: message
-                });
-                input.value = '';
-            }
-        }
-        
-        // Handle Enter key
-        document.getElementById('messageInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-        
-        // Focus input on load
-        window.onload = () => {
-            document.getElementById('messageInput').focus();
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        };
+    });
 
-        // Add typing indicator (optional enhancement)
-        let typingTimeout;
-        document.getElementById('messageInput').addEventListener('input', () => {
-            clearTimeout(typingTimeout);
-            socket.emit('typing', { room: room, status: true });
-            
-            typingTimeout = setTimeout(() => {
-                socket.emit('typing', { room: room, status: false });
-            }, 1000);
-        });
+    socket.on('disconnect', () => {
+        console.log('Disconnected from server');
+        isConnected = false;
+    });
 
-        socket.on('user_typing', (data) => {
-            // Implementation for typing indicator
-            // You can add this feature later if needed
+    socket.on('connect_error', (error) => {
+        console.log('Connection error:', error);
+        isConnected = false;
+    });
+
+    // Message handling
+    socket.on('new_message', (data) => {
+        appendMessage(data);
+    });
+
+    socket.on('status', (data) => {
+        // Handle status messages (optional)
+        console.log(data.msg);
+    });
+
+    function appendMessage(data) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${data.sender === '{{ session.username }}' ? 'sent' : 'received'}`;
+        
+        const time = new Date(data.timestamp);
+        const formattedTime = time.toLocaleString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+            month: 'short',
+            day: 'numeric'
         });
-    </script>
+        
+        messageDiv.innerHTML = `
+            <div class="message-content">${data.content}</div>
+            <div class="message-time">${formattedTime}</div>
+        `;
+        
+        chatContainer.appendChild(messageDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        
+        if (message && isConnected) {
+            socket.emit('send_message', {
+                room: room,
+                message: message
+            });
+            input.value = '';
+        }
+    }
+
+    // Event listeners
+    document.getElementById('messageInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    window.onload = () => {
+        document.getElementById('messageInput').focus();
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    };
+</script>
 </body>
 </html>
