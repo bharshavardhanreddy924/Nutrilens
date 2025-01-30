@@ -4,29 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diet Chat - NutriLens</title>
-
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
     <style>
         :root {
-            --primary-color: #2ecc71; /* Light green */
-            --secondary-color: #27ae60; /* Darker green */
-            --accent-color: #FFE66D; /* Yellow for accents */
-            --dark-color: #2C3E50; /* Dark blue for text */
-            --light-color: #F7F9FC; /* Light background */
-            --success-color: #2ecc71; /* Green for success */
-            --white: #ffffff; /* White */
-            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-            --gradient: linear-gradient(135deg, var(--primary-color), #34D399); /* Green gradient */
+            --primary-color: #1e7d4e;
+            --secondary-color: #166d43;
+            --accent-color: #FFE66D;
+            --dark-color: #2C3E50;
+            --light-color: #F7F9FC;
+            --white: #ffffff;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --gradient: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Roboto', sans-serif;
             background-color: var(--light-color);
             color: var(--dark-color);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .navbar {
@@ -52,246 +53,231 @@
             color: var(--primary-color) !important;
         }
 
-        .nav-link.active {
-            color: var(--secondary-color) !important;
+        .chat-container {
+            height: calc(100vh - 200px);
+            background: var(--white);
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .chat-header {
             background: var(--gradient);
             color: var(--white);
+            padding: 20px;
             text-align: center;
-            padding: 80px 0;
-            margin-bottom: 40px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
 
-        .chat-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
-            opacity: 0.3;
+        .chat-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
         }
 
-        .chat-header h1 {
-            font-weight: 700;
-            font-size: 3rem;
-            margin-bottom: 15px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .chat-header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-
-        .chat-container {
-            background: var(--white);
-            border-radius: 20px;
-            box-shadow: var(--card-shadow);
-            padding: 30px;
-            margin-bottom: 30px;
-            height: 60vh;
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
             overflow-y: auto;
-            scroll-behavior: smooth;
-            border: 2px solid rgba(46, 204, 113, 0.1); /* Light green border */
         }
 
         .message {
-            margin-bottom: 1.5rem;
-            padding: 1rem 1.5rem;
-            border-radius: 15px;
-            max-width: 70%;
+            margin-bottom: 15px;
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 10px;
             position: relative;
-            animation: fadeInUp 0.3s ease;
-            border: 1px solid rgba(46, 204, 113, 0.1); /* Light green border */
         }
 
         .user-message {
-            background: var(--gradient);
+            background-color: var(--primary-color);
             color: var(--white);
             margin-left: auto;
-            box-shadow: 5px 5px 15px rgba(46, 204, 113, 0.2);
         }
 
         .bot-message {
             background-color: var(--light-color);
             margin-right: auto;
-            box-shadow: 5px 5px 15px rgba(44, 62, 80, 0.1);
+        }
+
+        .quick-replies {
+            display: flex;
+            gap: 10px;
+            padding: 10px 20px;
+            overflow-x: auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .quick-reply-btn {
+            background: var(--white);
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+        }
+
+        .quick-reply-btn:hover {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .chat-input {
+            padding: 20px;
+            background-color: var(--white);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group .form-control {
+            border-radius: 20px 0 0 20px;
+            border: 1px solid var(--primary-color);
+        }
+
+        .input-group .btn {
+            border-radius: 0 20px 20px 0;
+            background: var(--gradient);
+            color: var(--white);
+            border: none;
         }
 
         .timestamp {
-            font-size: 0.75rem;
-            color: rgba(44, 62, 80, 0.6);
-            margin-top: 8px;
-            font-weight: 500;
-        }
-
-        .user-message .timestamp {
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .input-group {
-            margin-top: 30px;
-            gap: 15px;
-        }
-
-        .input-group input {
-            border-radius: 15px;
-            border: 2px solid rgba(78, 205, 196, 0.2);
-            padding: 15px 25px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-
-        .input-group input:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 5px 20px rgba(78, 205, 196, 0.2);
-        }
-
-        .input-group button {
-            border-radius: 15px;
-            background: var(--gradient);
-            border: none;
-            padding: 15px 30px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.2);
-        }
-
-        .input-group button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 5px;
         }
 
         /* Custom scrollbar */
-        .chat-container::-webkit-scrollbar {
-            width: 8px;
+        ::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .chat-container::-webkit-scrollbar-track {
+        ::-webkit-scrollbar-track {
             background: var(--light-color);
-            border-radius: 4px;
         }
 
-        .chat-container::-webkit-scrollbar-thumb {
-            background: var(--secondary-color);
-            border-radius: 4px;
-        }
-
-        .chat-container::-webkit-scrollbar-thumb:hover {
-            background: #3dbdb5;
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 3px;
         }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg">
         <div class="container">
-            <a class="navbar-brand" href="/">NutriLens</a>
+            <a class="navbar-brand" href="/"><i class="fas fa-utensils"></i> NutriLens</a>
             <div class="navbar-nav">
                 <a class="nav-link" href="/history">History</a>
                 <a class="nav-link" href="/weekly_analysis">Weekly Analysis</a>
+                <a class="nav-link" href="/recommend">Diet Recommendation</a>
                 <a class="nav-link active" href="/chatbot">Diet Chat</a>
                 <a class="nav-link" href="/logout">Logout</a>
             </div>
         </div>
     </nav>
 
-    <div class="chat-header">
-        <h1 class="animate__animated animate__fadeInDown">Indian Diet Assistant</h1>
-        <p class="animate__animated animate__fadeInUp">Get personalized diet recommendations and insights</p>
-    </div>
-
     <div class="container">
-        <div class="chat-container" id="chatContainer"></div>
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2><i class="fas fa-robot"></i> Diet Assistant</h2>
+                <p class="mb-0">Ask me anything about your diet and nutrition!</p>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will be dynamically added here -->
+            </div>
 
-        <div class="input-group">
-            <input type="text" id="userInput" class="form-control" placeholder="Ask about Indian dishes, diet recommendations...">
-            <button class="btn" onclick="sendMessage()">Send Message</button>
+            <div class="quick-replies">
+                <button class="quick-reply-btn" onclick="sendQuickReply('Calculate my daily calories')">
+                    <i class="fas fa-calculator"></i> Daily Calories
+                </button>
+                <button class="quick-reply-btn" onclick="sendQuickReply('Healthy meal suggestions')">
+                    <i class="fas fa-utensils"></i> Meal Ideas
+                </button>
+                <button class="quick-reply-btn" onclick="sendQuickReply('Weight loss tips')">
+                    <i class="fas fa-weight"></i> Weight Loss
+                </button>
+                <button class="quick-reply-btn" onclick="sendQuickReply('Nutrition facts')">
+                    <i class="fas fa-apple-alt"></i> Nutrition Info
+                </button>
+            </div>
+
+            <div class="chat-input">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Type your message..." id="messageInput">
+                    <button class="btn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        function addMessage(message, isUser = false) {
-            const chatContainer = document.getElementById('chatContainer');
+        // Initialize chat with welcome message
+        document.addEventListener('DOMContentLoaded', function() {
+            addMessage("Hello! 👋 I'm your personal diet assistant. How can I help you today?", false);
+        });
+
+        function addMessage(text, isUser) {
+            const messagesDiv = document.getElementById('chatMessages');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
             messageDiv.innerHTML = `
-                <div>${message.content}</div>
-                <div class="timestamp">${message.timestamp}</div>
+                ${text}
+                <div class="timestamp">${timestamp}</div>
             `;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function sendQuickReply(text) {
+            document.getElementById('messageInput').value = text;
+            sendMessage();
         }
 
         async function sendMessage() {
-            const userInput = document.getElementById('userInput');
-            const message = userInput.value.trim();
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
             
             if (!message) return;
             
-            addMessage({
-                content: message,
-                timestamp: new Date().toLocaleString()
-            }, true);
-            
-            userInput.value = '';
-            
+            // Add user message
+            addMessage(message, true);
+            input.value = '';
+
             try {
+                // Simulate API call
+                // Replace with actual API endpoint
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ message })
                 });
-                
+
                 const data = await response.json();
-                
-                if (response.ok) {
-                    addMessage({
-                        content: data.response,
-                        timestamp: data.timestamp
-                    });
-                } else {
-                    addMessage({
-                        content: `Error: ${data.error}`,
-                        timestamp: new Date().toLocaleString()
-                    });
-                }
+                addMessage(data.response, false);
             } catch (error) {
-                addMessage({
-                    content: `Error: ${error.message}`,
-                    timestamp: new Date().toLocaleString()
-                });
+                addMessage("Sorry, I'm having trouble processing your request. Please try again.", false);
             }
         }
 
-        document.getElementById('userInput').addEventListener('keypress', function(e) {
+        // Enter key to send message
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();
             }
         });
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
