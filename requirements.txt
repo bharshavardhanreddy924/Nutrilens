@@ -12,3 +12,4 @@ certifi==2024.2.2
 langchain==0.0.300
 tensorflow-cpu
 langchain_groq
+flask-socketio
