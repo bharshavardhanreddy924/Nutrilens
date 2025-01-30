@@ -786,6 +786,141 @@ def chat():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+from flask import Flask, render_template, request, flash, redirect, url_for, session, jsonify
+from flask_socketio import SocketIO, emit, join_room, leave_room
+# ... (other imports remain the same)
+
+# Initialize Flask-SocketIO with additional configuration
+socketio = SocketIO(app, 
+    cors_allowed_origins="*",  # Configure CORS for WebSocket
+    ping_timeout=60,
+    ping_interval=25,
+    async_mode='gevent'  # Use gevent as async mode
+)
+
+# Add error handling for socket connections
+@socketio.on_error()
+def error_handler(e):
+    print(f"SocketIO error: {str(e)}")
+
+@socketio.on('connect')
+def handle_connect():
+    print(f"Client connected: {request.sid}")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print(f"Client disconnected: {request.sid}")
+
+@socketio.on('join')
+def on_join(data):
+    try:
+        if 'username' not in session:
+            return
+        
+        room = data.get('room')
+        if not room:
+            return
+            
+        join_room(room)
+        emit('status', {'msg': f"{session['username']} has joined the room."}, room=room)
+    except Exception as e:
+        print(f"Error in join: {str(e)}")
+
+@socketio.on('leave')
+def on_leave(data):
+    try:
+        if 'username' not in session:
+            return
+            
+        room = data.get('room')
+        if not room:
+            return
+            
+        leave_room(room)
+        emit('status', {'msg': f"{session['username']} has left the room."}, room=room)
+    except Exception as e:
+        print(f"Error in leave: {str(e)}")
+
+@socketio.on('send_message')
+def handle_message(data):
+    try:
+        if 'username' not in session:
+            return
+            
+        room = data.get('room')
+        message_content = data.get('message')
+        
+        if not room or not message_content:
+            return
+            
+        # Create message document
+        message = {
+            "sender": session['username'],
+            "content": message_content,
+            "timestamp": datetime.now(),
+            "room": room
+        }
+        
+        # Save to database
+        chat_collection.insert_one(message)
+        
+        # Emit to room
+        emit('new_message', {
+            "sender": message['sender'],
+            "content": message['content'],
+            "timestamp": message['timestamp'].strftime("%Y-%m-%d %H:%M:%S")
+        }, room=room)
+    except Exception as e:
+        print(f"Error in send_message: {str(e)}")
+
+# Update the chat interface route to include error handling
+@app.route('/chat/<username>')
+def chat_interface(username):
+    try:
+        if 'username' not in session:
+            return redirect(url_for('login'))
+            
+        # Check if friends
+        friendship = friends_collection.find_one({
+            "$or": [
+                {"user1": session['username'], "user2": username},
+                {"user1": username, "user2": session['username']}
+            ]
+        })
+        
+        if not friendship:
+            flash("You must be friends to chat", "error")
+            return redirect(url_for('index'))
+            
+        # Generate unique room ID
+        users = sorted([session['username'], username])
+        room = f"chat_{users[0]}_{users[1]}"
+        
+        # Get chat history
+        messages = list(chat_collection.find({
+            "room": room
+        }).sort("timestamp", 1))
+        
+        return render_template(
+            'chat.html',
+            friend_username=username,
+            room=room,
+            messages=messages
+        )
+    except Exception as e:
+        flash(f"Error loading chat: {str(e)}", "error")
+        return redirect(url_for('index'))
+
+# Update the main run block
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, 
+        host='0.0.0.0', 
+        port=port,
+        debug=False,  # Set to False in production
+        use_reloader=False  # Disable reloader in production
+    )
     
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
