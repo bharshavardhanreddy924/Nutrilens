@@ -43,14 +43,276 @@ db = client["NutriLens"]
 food_logs_collection = db["food_logs"]
 users_collection = db["users"]
 
+
+
+import os
+from flask import Flask, render_template, request, flash, redirect, url_for, session, jsonify
+from flask_bcrypt import Bcrypt
+from keras.models import load_model
+from PIL import Image, ImageOps
+import numpy as np
+import pandas as pd
+from pymongo import MongoClient
+from datetime import datetime
+from langchain_groq import ChatGroq
+
+# Bowl sizes configuration
+BOWL_SIZES = {
+    "mini": {"name": "Mini Bowl", "multiplier": 1.0},  # 100g
+    "small": {"name": "Small Bowl", "multiplier": 2.0},  # 200g
+    "medium": {"name": "Medium Bowl", "multiplier": 3.5},  # 350g
+    "large": {"name": "Large Bowl", "multiplier": 5.0},  # 500g
+    "xl": {"name": "Extra-Large Bowl", "multiplier": 7.5},  # 750g
+    "jumbo": {"name": "Jumbo Bowl", "multiplier": 10.0},  # 1000g
+}
+
+# Define recommended daily values
+DAILY_RECOMMENDATIONS = {
+    "Energy (Kcal)": 2000,
+    "Protein (g)": 60,
+    "Fat (g)": 70,
+    "Carbohydrates (g)": 310
+}
+
+# Load the pre-trained model and class labels
+try:
+    model = load_model("working_model.h5", compile=False)
+    with open("labels.txt", "r") as f:
+        class_names = [' '.join(name.strip().split()[1:]) for name in f.readlines()]
+except Exception as e:
+    print(f"Error loading model or labels: {e}")
+    class_names = []
+    model = None
+
+# Load the nutritional data from a CSV file
+try:
+    nutritional_data = pd.read_csv("NutritionalValues.csv", index_col="Food Item")
+except Exception as e:
+    print(f"Error loading nutritional data: {e}")
+    nutritional_data = pd.DataFrame()
+
+def load_recommendations():
+    """Load food recommendations from text files"""
+    recommendations = {}
+    nutrient_files = {
+        "Energy (Kcal)": "energy.txt",
+        "Protein (g)": "protein.txt",
+        "Fat (g)": "fat.txt",
+        "Carbohydrates (g)": "carbs.txt"
+    }
+    
+    for nutrient, filename in nutrient_files.items():
+        try:
+            with open(filename, 'r') as f:
+                recommendations[nutrient] = [line.strip() for line in f.readlines()]
+        except FileNotFoundError:
+            recommendations[nutrient] = []
+            print(f"Warning: {filename} not found")
+    
+    return recommendations
+
+def get_nutrient_recommendations(total_nutrition):
+    """
+    Determine which nutrients are below recommended values and return appropriate food recommendations
+    """
+    recommendations = load_recommendations()
+    nutrient_advice = {}
+    
+    # Map the total_nutrition keys to their corresponding DAILY_RECOMMENDATIONS keys
+    nutrition_mapping = {
+        "calories": "Energy (Kcal)",
+        "protein": "Protein (g)",
+        "carbohydrates": "Carbohydrates (g)",
+        "fat": "Fat (g)"
+    }
+    
+    for total_key, recommend_key in nutrition_mapping.items():
+        current_value = total_nutrition.get(total_key, 0)
+        recommended_value = DAILY_RECOMMENDATIONS[recommend_key]
+        
+        if current_value < recommended_value * 0.8:  # Below 80% of recommended value
+            nutrient_advice[recommend_key] = {
+                'current': round(current_value, 1),
+                'recommended': recommended_value,
+                'percentage': round((current_value / recommended_value) * 100, 1),
+                'foods': recommendations.get(recommend_key, [])
+            }
+    
+    return nutrient_advice
+
+def adjust_nutritional_info(nutritional_info, multiplier):
+    """Adjust nutritional information based on bowl size multiplier"""
+    if nutritional_info is None:
+        return None
+    
+    adjusted_info = {}
+    for key, value in nutritional_info.items():
+        if isinstance(value, (int, float)):
+            adjusted_info[key] = value * multiplier
+        else:
+            adjusted_info[key] = value
+    return adjusted_info
+
+import os
+from flask import Flask, render_template, request, flash, redirect, url_for, session
+import base64
+import re
+from PIL import Image
+import io
+import uuid
+from datetime import datetime
+
+def save_uploaded_file(file, upload_folder):
+    """Handle regular file upload"""
+    try:
+        # Generate unique filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"food_img_{timestamp}_{unique_id}.jpg"
+        filepath = os.path.join(upload_folder, filename)
+        
+        # Open and convert image to RGB
+        img = Image.open(file).convert('RGB')
+        img.save(filepath, 'JPEG')
+        
+        return filepath
+    except Exception as e:
+        raise Exception(f"Error saving uploaded file: {str(e)}")
+
+def save_base64_image(base64_string, upload_folder):
+    """Handle base64 image from camera capture"""
+    try:
+        # Remove base64 header if present
+        if 'data:image' in base64_string:
+            base64_data = re.sub('^data:image/.+;base64,', '', base64_string)
+        else:
+            base64_data = base64_string
+            
+        # Decode base64 data
+        image_data = base64.b64decode(base64_data)
+        
+        # Generate unique filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"food_img_{timestamp}_{unique_id}.jpg"
+        filepath = os.path.join(upload_folder, filename)
+        
+        # Convert to PIL Image and save
+        img = Image.open(io.BytesIO(image_data)).convert('RGB')
+        img.save(filepath, 'JPEG')
+        
+        return filepath
+    except Exception as e:
+        raise Exception(f"Error saving captured image: {str(e)}")
+
+def process_image_for_model(image_path):
+    """Process saved image for model prediction"""
+    try:
+        image = Image.open(image_path).convert("RGB")
+        image = ImageOps.fit(image, (224, 224), Image.Resampling.LANCZOS)
+        image_array = np.asarray(image)
+        normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
+        data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+        data[0] = normalized_image_array
+        return data
+    except Exception as e:
+        raise Exception(f"Error processing image for model: {str(e)}")
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        try:
+            # Ensure upload folder exists
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            
+            # Get bowl size
+            bowl_size = request.form.get('bowl_size', 'mini')
+            saved_image_path = None
+            
+            # Handle file upload
+            if 'image' in request.files and request.files['image'].filename:
+                saved_image_path = save_uploaded_file(
+                    request.files['image'], 
+                    app.config['UPLOAD_FOLDER']
+                )
+                
+            # Handle camera capture
+            elif 'captured-image' in request.form and request.form['captured-image']:
+                saved_image_path = save_base64_image(
+                    request.form['captured-image'],
+                    app.config['UPLOAD_FOLDER']
+                )
+            
+            if not saved_image_path:
+                flash('No image provided', 'danger')
+                return redirect(request.url)
+                
+            # Process image for model prediction
+            image_data = process_image_for_model(saved_image_path)
+            
+            # Make prediction
+            if model is not None:
+                prediction = model.predict(image_data)
+                index = np.argmax(prediction)
+                class_name = class_names[index]
+                confidence_score = float(prediction[0][index])
+                
+                # Get nutritional info
+                nutritional_info = None
+                if class_name in nutritional_data.index:
+                    nutritional_info = nutritional_data.loc[class_name].to_dict()
+                    multiplier = BOWL_SIZES[bowl_size]["multiplier"]
+                    nutritional_info = adjust_nutritional_info(nutritional_info, multiplier)
+                
+                # Create food log entry
+                food_log = {
+                    "username": session.get("username", "guest"),
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "food_item": class_name,
+                    "bowl_size": BOWL_SIZES[bowl_size]["name"],
+                    "portion_weight": f"{int(100 * BOWL_SIZES[bowl_size]['multiplier'])}g",
+                    "confidence_score": confidence_score,
+                    "nutritional_info": nutritional_info,
+                    "image_path": saved_image_path
+                }
+                food_logs_collection.insert_one(food_log)
+                
+                # Return results
+                return render_template(
+                    'index.html',
+                    image_url=saved_image_path,
+                    class_name=class_name,
+                    confidence_score=confidence_score,
+                    nutritional_info=nutritional_info,
+                    bowl_sizes=BOWL_SIZES,
+                    selected_bowl=bowl_size
+                )
+            else:
+                flash('Model not loaded properly', 'danger')
+                return redirect(request.url)
+                
+        except Exception as e:
+            flash(f'Error processing image: {str(e)}', 'danger')
+            return redirect(request.url)
+            
+    return render_template('index.html', bowl_sizes=BOWL_SIZES)
+
+
+# Add to existing imports
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 import json
 
 # Initialize SocketIO with Flask app
-socketio = SocketIO(app)
-
+socketio = SocketIO(app, 
+                   async_mode='threading', 
+                   cors_allowed_origins="*",
+                   logger=True,
+                   engineio_logger=True)
 # Add these collections to MongoDB setup
 friends_collection = db["friends"]
 chat_collection = db["chats"]
@@ -153,15 +415,23 @@ def search_users():
     return jsonify([user['username'] for user in users])
 
 # Chat System
+@socketio.on('connect')
+def handle_connect():
+    if 'username' not in session:
+        return False
+    return True
+
 @socketio.on('join')
 def on_join(data):
     room = data['room']
     join_room(room)
+    emit('status', {'msg': f"{session['username']} has joined the room."}, room=room)
 
 @socketio.on('leave')
 def on_leave(data):
     room = data['room']
     leave_room(room)
+    emit('status', {'msg': f"{session['username']} has left the room."}, room=room)
 
 @socketio.on('send_message')
 def handle_message(data):
@@ -179,6 +449,7 @@ def handle_message(data):
         "content": message['content'],
         "timestamp": message['timestamp'].strftime("%Y-%m-%d %H:%M:%S")
     }, room=room)
+
 
 # Friend Progress Tracking
 @app.route('/friend/progress/<username>')
@@ -336,6 +607,7 @@ def chat_interface(username):
         messages=messages
     )
 
+
 # Friends List
 @app.route('/friends')
 def friends_list():
@@ -366,181 +638,6 @@ def friends_list():
         friends=friend_usernames,
         pending_requests=pending_requests
     )
-
-
-BOWL_SIZES = {
-    "mini": {"name": "Mini Bowl", "multiplier": 1.0},  # 100g
-    "small": {"name": "Small Bowl", "multiplier": 2.0},  # 200g
-    "medium": {"name": "Medium Bowl", "multiplier": 3.5},  # 350g
-    "large": {"name": "Large Bowl", "multiplier": 5.0},  # 500g
-    "xl": {"name": "Extra-Large Bowl", "multiplier": 7.5},  # 750g
-    "jumbo": {"name": "Jumbo Bowl", "multiplier": 10.0},  # 1000g
-}
-
-# Define recommended daily values
-DAILY_RECOMMENDATIONS = {
-    "Energy (Kcal)": 2000,
-    "Protein (g)": 60,
-    "Fat (g)": 70,
-    "Carbohydrates (g)": 310
-}
-
-# Load the pre-trained model and class labels
-try:
-    model = load_model("working_model.h5", compile=False)
-    with open("labels.txt", "r") as f:
-        class_names = [' '.join(name.strip().split()[1:]) for name in f.readlines()]
-except Exception as e:
-    print(f"Error loading model or labels: {e}")
-    class_names = []
-    model = None
-
-# Load the nutritional data from a CSV file
-try:
-    nutritional_data = pd.read_csv("NutritionalValues.csv", index_col="Food Item")
-except Exception as e:
-    print(f"Error loading nutritional data: {e}")
-    nutritional_data = pd.DataFrame()
-
-def load_recommendations():
-    """Load food recommendations from text files"""
-    recommendations = {}
-    nutrient_files = {
-        "Energy (Kcal)": "energy.txt",
-        "Protein (g)": "protein.txt",
-        "Fat (g)": "fat.txt",
-        "Carbohydrates (g)": "carbs.txt"
-    }
-    
-    for nutrient, filename in nutrient_files.items():
-        try:
-            with open(filename, 'r') as f:
-                recommendations[nutrient] = [line.strip() for line in f.readlines()]
-        except FileNotFoundError:
-            recommendations[nutrient] = []
-            print(f"Warning: {filename} not found")
-    
-    return recommendations
-
-def get_nutrient_recommendations(total_nutrition):
-    """
-    Determine which nutrients are below recommended values and return appropriate food recommendations
-    """
-    recommendations = load_recommendations()
-    nutrient_advice = {}
-    
-    # Map the total_nutrition keys to their corresponding DAILY_RECOMMENDATIONS keys
-    nutrition_mapping = {
-        "calories": "Energy (Kcal)",
-        "protein": "Protein (g)",
-        "carbohydrates": "Carbohydrates (g)",
-        "fat": "Fat (g)"
-    }
-    
-    for total_key, recommend_key in nutrition_mapping.items():
-        current_value = total_nutrition.get(total_key, 0)
-        recommended_value = DAILY_RECOMMENDATIONS[recommend_key]
-        
-        if current_value < recommended_value * 0.8:  # Below 80% of recommended value
-            nutrient_advice[recommend_key] = {
-                'current': round(current_value, 1),
-                'recommended': recommended_value,
-                'percentage': round((current_value / recommended_value) * 100, 1),
-                'foods': recommendations.get(recommend_key, [])
-            }
-    
-    return nutrient_advice
-
-def adjust_nutritional_info(nutritional_info, multiplier):
-    """Adjust nutritional information based on bowl size multiplier"""
-    if nutritional_info is None:
-        return None
-    
-    adjusted_info = {}
-    for key, value in nutritional_info.items():
-        if isinstance(value, (int, float)):
-            adjusted_info[key] = value * multiplier
-        else:
-            adjusted_info[key] = value
-    return adjusted_info
-
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-
-    if request.method == 'POST':
-        # Check if an image file is uploaded
-        if 'image' not in request.files:
-            flash('No file part in request', 'danger')
-            return redirect(request.url)
-
-        file = request.files['image']
-        bowl_size = request.form.get('bowl_size', 'mini')  # Default to 'mini' bowl size
-
-        # Validate bowl size
-        if bowl_size not in BOWL_SIZES:
-            flash('Invalid bowl size selected', 'danger')
-            return redirect(request.url)
-
-        if file.filename == '':
-            flash('No file selected', 'danger')
-            return redirect(request.url)
-
-        if file:
-            try:
-                # Save the file
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-                file.save(file_path)
-
-                # Process the image and predict
-                image = Image.open(file_path).convert("RGB")
-                image = ImageOps.fit(image, (224, 224), Image.Resampling.LANCZOS)
-                image_array = np.asarray(image)
-                normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
-                data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
-                data[0] = normalized_image_array
-
-                prediction = model.predict(data)
-                index = np.argmax(prediction)
-                class_name = class_names[index]
-                confidence_score = float(prediction[0][index])
-
-                # Fetch nutritional info and adjust based on bowl size
-                nutritional_info = None
-                if class_name in nutritional_data.index:
-                    nutritional_info = nutritional_data.loc[class_name].to_dict()
-                    multiplier = BOWL_SIZES[bowl_size]["multiplier"]
-                    nutritional_info = adjust_nutritional_info(nutritional_info, multiplier)
-
-                # Log the food item to the database
-                food_log = {
-                    "username": session.get("username", "guest"),
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                    "food_item": class_name,
-                    "bowl_size": BOWL_SIZES[bowl_size]["name"],
-                    "portion_weight": f"{int(100 * BOWL_SIZES[bowl_size]['multiplier'])}g",
-                    "confidence_score": confidence_score,
-                    "nutritional_info": nutritional_info,
-                    "image_path": file_path
-                }
-                food_logs_collection.insert_one(food_log)
-
-                flash('File uploaded and processed successfully!', 'success')
-                return render_template(
-                    'index.html',
-                    image_url=file_path,
-                    class_name=class_name,
-                    confidence_score=confidence_score,
-                    nutritional_info=nutritional_info,
-                    bowl_sizes=BOWL_SIZES,
-                    selected_bowl=bowl_size
-                )
-            except Exception as e:
-                flash(f'Error processing image: {e}', 'danger')
-                return redirect(request.url)
-
-    return render_template('index.html', bowl_sizes=BOWL_SIZES)
 
 @app.route('/history', methods=['GET'])
 def history():
@@ -785,7 +882,8 @@ def chat():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
+
+
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    socketio.run(host='0.0.0.0', port=port)
